@@ -1,139 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>LawGPT Chatbot</title>
-  <!-- Include Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Optional: Customize Tailwind config -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#1a202c',
-            secondary: '#2d3748',
-            accent: '#4a5568',
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPC Legal Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
+    <style>
+        .message-animate {
+            animation: slideIn 0.3s ease-out;
         }
-      }
-    }
-  </script>
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="max-w-2xl w-full bg-white shadow-md rounded px-8 py-6">
-    <h1 class="text-2xl font-bold mb-4 text-center">LawGPT Chatbot</h1>
-    <div class="mb-4 flex justify-end">
-      <span id="status-indicator" class="px-2 py-1 rounded-full text-sm bg-green-200 text-green-800">
-        Active
-      </span>
+<body class="bg-gray-100 h-screen flex flex-col">
+    <div class="container mx-auto p-4 flex-1 flex flex-col max-w-4xl">
+        <!-- Header with Status -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                </svg>
+                <h1 class="text-xl font-bold text-gray-800">IPC Legal Assistant</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600">Status:</span>
+                <div id="status-indicator" class="flex items-center">
+                    <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                    <span class="ml-2 text-sm text-gray-600">Online</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="flex-1 bg-white rounded-lg shadow-md flex flex-col">
+            <!-- Messages Area -->
+            <div id="messages" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex items-start space-x-3 message-animate">
+                    <div class="flex-shrink-0">
+                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-4 max-w-3xl">
+                        <p class="text-gray-800">Hello! I'm your IPC Legal Assistant. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t p-4">
+                <div class="flex space-x-4">
+                    <input type="text" id="user-input" 
+                           class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Type your question here...">
+                    <button id="send-button" 
+                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="chat-container" class="h-64 overflow-y-auto border p-4 mb-4 bg-gray-50">
-      <!-- Chat messages will appear here -->
-    </div>
-    <form id="chat-form" class="flex">
-      <input
-        type="text"
-        id="user-input"
-        class="flex-grow border rounded-l px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
-        placeholder="Ask a question..."
-        autocomplete="off"
-      />
-      <button
-        type="submit"
-        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r"
-      >
-        Send
-      </button>
-    </form>
-  </div>
 
-  <!-- JavaScript code to handle chat functionality -->
-  <script>
-    const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input');
-    const chatContainer = document.getElementById('chat-container');
-    const statusIndicator = document.getElementById('status-indicator');
-
-    let chatHistory = [];
-    let isThinking = false;
-
-    chatForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const question = userInput.value.trim();
-      if (!question) return;
-
-      addMessage('You', question, 'user');
-
-      chatHistory.push({ role: 'user', content: question });
-      userInput.value = '';
-      isThinking = true;
-      showTypingIndicator();
-
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question, chat_history: chatHistory })
+    <!-- First load the script inline to ensure immediate availability -->
+    <script type="module">
+        import { ChatUI } from '/chat.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatUI();
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          chatHistory = data.chat_history;
-          addMessage('Assistant', data.answer, 'assistant');
-          statusIndicator.textContent = 'Active';
-          statusIndicator.classList.remove('bg-red-200', 'text-red-800');
-          statusIndicator.classList.add('bg-green-200', 'text-green-800');
-        } else {
-          throw new Error('Network response was not ok');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        addMessage('Assistant', 'An error occurred. Please try again later.', 'assistant');
-        statusIndicator.textContent = 'Inactive';
-        statusIndicator.classList.remove('bg-green-200', 'text-green-800');
-        statusIndicator.classList.add('bg-red-200', 'text-red-800');
-      } finally {
-        isThinking = false;
-        removeTypingIndicator();
-      }
-    });
-
-    function addMessage(sender, message, role) {
-      const messageElement = document.createElement('div');
-      messageElement.classList.add('mb-2', role === 'user' ? 'text-right' : 'text-left');
-
-      const messageContent = document.createElement('p');
-      messageContent.classList.add('inline-block', 'p-2', 'rounded', role === 'user' ? 'bg-blue-100' : 'bg-gray-100');
-      messageContent.innerHTML = `<strong>${sender}:</strong> ${message}`;
-
-      messageElement.appendChild(messageContent);
-      chatContainer.appendChild(messageElement);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function showTypingIndicator() {
-      if (document.getElementById('typing-indicator')) return;
-
-      const typingElement = document.createElement('div');
-      typingElement.id = 'typing-indicator';
-      typingElement.classList.add('mb-2', 'text-left');
-
-      const typingContent = document.createElement('p');
-      typingContent.classList.add('inline-block', 'p-2', 'rounded', 'bg-gray-100');
-      typingContent.innerHTML = `<strong>Assistant:</strong> Typing...`;
-
-      typingElement.appendChild(typingContent);
-      chatContainer.appendChild(typingElement);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function removeTypingIndicator() {
-      const typingElement = document.getElementById('typing-indicator');
-      if (typingElement) {
-        chatContainer.removeChild(typingElement);
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
