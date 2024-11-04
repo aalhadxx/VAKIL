@@ -1,40 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>LawGPT Chatbot</title>
-</head>
-<body>
-  <h1>LawGPT Chatbot</h1>
-  <div id="chat-container"></div>
-  <input type="text" id="user-input" placeholder="Type your question here..." />
-  <button onclick="sendMessage()">Send</button>
-
+  <!-- Include Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Optional: Customize Tailwind config -->
   <script>
-    let chatHistory = [];
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1a202c',
+            secondary: '#2d3748',
+            accent: '#4a5568',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="max-w-2xl w-full bg-white shadow-md rounded px-8 py-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">LawGPT Chatbot</h1>
+    <div class="mb-4 flex justify-end">
+      <span id="status-indicator" class="px-2 py-1 rounded-full text-sm bg-green-200 text-green-800">
+        Active
+      </span>
+    </div>
+    <div id="chat-container" class="h-64 overflow-y-auto border p-4 mb-4 bg-gray-50">
+      <!-- Chat messages will appear here -->
+    </div>
+    <form id="chat-form" class="flex">
+      <input
+        type="text"
+        id="user-input"
+        class="flex-grow border rounded-l px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+        placeholder="Ask a question..."
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r"
+      >
+        Send
+      </button>
+    </form>
+  </div>
 
-    function displayMessage(role, content) {
-      const chatContainer = document.getElementById('chat-container');
+  <!-- JavaScript code to handle chat functionality -->
+  <script>
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatContainer = document.getElementById('chat-container');
+    const statusIndicator = document.getElementById('status-indicator');
+
+    let chatHistory = [];
+    let isThinking = false;
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = userInput.value.trim();
+      if (!question) return;
+
+      addMessage('You', question, 'user');
+
+      chatHistory.push({ role: 'user', content: question });
+      userInput.value = '';
+      isThinking = true;
+      showTypingIndicator();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, chat_history: chatHistory })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          chatHistory = data.chat_history;
+          addMessage('Assistant', data.answer, 'assistant');
+          statusIndicator.textContent = 'Active';
+          statusIndicator.classList.remove('bg-red-200', 'text-red-800');
+          statusIndicator.classList.add('bg-green-200', 'text-green-800');
+        } else {
+          throw new Error('Network response was not ok');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        addMessage('Assistant', 'An error occurred. Please try again later.', 'assistant');
+        statusIndicator.textContent = 'Inactive';
+        statusIndicator.classList.remove('bg-green-200', 'text-green-800');
+        statusIndicator.classList.add('bg-red-200', 'text-red-800');
+      } finally {
+        isThinking = false;
+        removeTypingIndicator();
+      }
+    });
+
+    function addMessage(sender, message, role) {
       const messageElement = document.createElement('div');
-      messageElement.innerHTML = `<strong>${role}:</strong> ${content}`;
+      messageElement.classList.add('mb-2', role === 'user' ? 'text-right' : 'text-left');
+
+      const messageContent = document.createElement('p');
+      messageContent.classList.add('inline-block', 'p-2', 'rounded', role === 'user' ? 'bg-blue-100' : 'bg-gray-100');
+      messageContent.innerHTML = `<strong>${sender}:</strong> ${message}`;
+
+      messageElement.appendChild(messageContent);
       chatContainer.appendChild(messageElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    async function sendMessage() {
-      const userInput = document.getElementById('user-input').value;
-      displayMessage('User', userInput);
+    function showTypingIndicator() {
+      if (document.getElementById('typing-indicator')) return;
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: userInput,
-          chat_history: chatHistory
-        })
-      });
-      const data = await response.json();
-      displayMessage('Assistant', data.answer);
-      chatHistory = data.chat_history;
-      document.getElementById('user-input').value = '';
+      const typingElement = document.createElement('div');
+      typingElement.id = 'typing-indicator';
+      typingElement.classList.add('mb-2', 'text-left');
+
+      const typingContent = document.createElement('p');
+      typingContent.classList.add('inline-block', 'p-2', 'rounded', 'bg-gray-100');
+      typingContent.innerHTML = `<strong>Assistant:</strong> Typing...`;
+
+      typingElement.appendChild(typingContent);
+      chatContainer.appendChild(typingElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typingElement = document.getElementById('typing-indicator');
+      if (typingElement) {
+        chatContainer.removeChild(typingElement);
+      }
     }
   </script>
 </body>

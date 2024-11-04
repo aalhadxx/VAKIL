@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
+import logging
 
 # Import your necessary modules
 from langchain_community.vectorstores import FAISS
@@ -11,6 +12,13 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferWindowMemory
 
 app = FastAPI()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 TOGETHER_AI_API_KEY = os.environ.get('4569143f0e2c15d6680c634d84e17c9f61dfa9417deb8698a7247a1037b17c2a')
@@ -25,21 +33,14 @@ embeddings = HuggingFaceEmbeddings(
 
 # Load your FAISS index
 db = FAISS.load_local(
-    "ipc_vector_db",
+    "../ipc_vector_db",  # Adjust path if necessary
     embeddings,
-    allow_dangerous_serialization=True  # Be cautious with this in production
+    allow_dangerous_serialization=True
 )
 db_retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 4})
 
 # Define your prompt template
-
-prompt_template = """<s>[INST]This is a chat template and As a legal chat bot specializing in Indian Penal Code queries, your primary objective is to provide accurate and concise information based on the user's questions. Do not generate your own questions and answers. You will adhere strictly to the instructions provided, offering relevant context from the knowledge base while avoiding unnecessary details. Your responses will be brief, to the point, and in compliance with the established format. If a question falls outside the given context, you will refrain from utilizing the chat history and instead rely on your own knowledge base to generate an appropriate response. You will prioritize the user's query and refrain from posing additional questions. The aim is to deliver professional, precise, and contextually relevant information pertaining to the Indian Penal Code.
-CONTEXT: {context}
-CHAT HISTORY: {chat_history}
-QUESTION: {question}
-ANSWER:
-</s>[INST]
-"""
+prompt_template = """<s>[INST]...Your prompt here...</s>[INST]"""
 
 prompt = PromptTemplate(
     template=prompt_template,
@@ -74,11 +75,13 @@ class ChatResponse(BaseModel):
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
+        logger.info(f"Received question: {request.question}")
         # Update the memory with chat history
         qa.memory.chat_memory.messages = request.chat_history
 
         # Generate response
         result = qa({"question": request.question})
+        logger.info(f"Generated answer: {result['answer']}")
 
         # Update chat history
         new_chat_history = request.chat_history + [
@@ -88,4 +91,5 @@ async def chat_endpoint(request: ChatRequest):
 
         return ChatResponse(answer=result["answer"], chat_history=new_chat_history)
     except Exception as e:
+        logger.exception("Error in chat_endpoint")
         raise HTTPException(status_code=500, detail=str(e))
