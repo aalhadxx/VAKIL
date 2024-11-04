@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LawGPT Chatbot</title>
+</head>
+<body>
+  <h1>LawGPT Chatbot</h1>
+  <div id="chat-container"></div>
+  <input type="text" id="user-input" placeholder="Type your question here..." />
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    let chatHistory = [];
+
+    function displayMessage(role, content) {
+      const chatContainer = document.getElementById('chat-container');
+      const messageElement = document.createElement('div');
+      messageElement.innerHTML = `<strong>${role}:</strong> ${content}`;
+      chatContainer.appendChild(messageElement);
+    }
+
+    async function sendMessage() {
+      const userInput = document.getElementById('user-input').value;
+      displayMessage('User', userInput);
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: userInput,
+          chat_history: chatHistory
+        })
+      });
+      const data = await response.json();
+      displayMessage('Assistant', data.answer);
+      chatHistory = data.chat_history;
+      document.getElementById('user-input').value = '';
+    }
+  </script>
+</body>
+</html>
