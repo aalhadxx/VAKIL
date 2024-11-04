@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langchain
+faiss-cpu
+langchain_community
+langchain_together
+huggingface-hub
+boto3  # If you're using AWS S3 for FAISS index
+nomic  # If required by your embeddings
