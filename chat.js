@@ -107,19 +107,40 @@ export class ChatUI {
     }
 
     showSuggestions(suggestions) {
-        this.suggestionsContainer.innerHTML = '';
+    this.suggestionsContainer.innerHTML = '';
+    
+    // Create a flex container for suggestions
+    const flexContainer = document.createElement('div');
+    flexContainer.className = 'flex flex-wrap gap-2 mt-3 mb-4 px-4';
+    
+    suggestions.forEach(suggestion => {
+        const button = document.createElement('button');
+        button.className = 'suggestion-pill px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-sm ' +
+                          'hover:bg-blue-100 transition-colors duration-200 border border-blue-200 ' +
+                          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ' +
+                          'whitespace-nowrap';
+        button.textContent = suggestion;
         
-        suggestions.forEach(suggestion => {
-            const button = document.createElement('button');
-            button.className = 'px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors duration-200';
-            button.textContent = suggestion;
-            button.addEventListener('click', () => {
-                this.userInput.value = suggestion;
-                this.sendMessage();
-            });
-            this.suggestionsContainer.appendChild(button);
+        // Add click handler
+        button.addEventListener('click', () => {
+            this.userInput.value = suggestion;
+            this.sendMessage();
         });
-    }
+        
+        // Add hover effect
+        button.addEventListener('mouseenter', () => {
+            button.classList.add('transform', 'scale-105');
+        });
+        
+        button.addEventListener('mouseleave', () => {
+            button.classList.remove('transform', 'scale-105');
+        });
+        
+        flexContainer.appendChild(button);
+    });
+    
+    this.suggestionsContainer.appendChild(flexContainer);
+}
 
     formatMessage(content) {
         if (!content.includes('\n')) return content;
@@ -140,7 +161,7 @@ export class ChatUI {
         const indicator = this.statusIndicator.querySelector('span:first-child');
         const text = this.statusIndicator.querySelector('span:last-child');
         indicator.className = `h-3 w-3 ${isOnline ? 'bg-green-500' : 'bg-red-500'} rounded-full`;
-        text.textContent = isOnline ? 'Online' : 'Offline';
+        text.textContent = isOnline ? 'Ready' : 'Thinking...';
     }
 
     scrollToBottom() {
@@ -199,29 +220,3 @@ export class ChatUI {
     }
 }
 
-// Add CSS for typing animation
-const style = document.createElement('style');
-style.textContent = `
-    .typing-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #3B82F6;
-        border-radius: 50%;
-        animation: typing 1.4s infinite ease-in-out;
-        display: inline-block;
-    }
-
-    .typing-dot:nth-child(1) { animation-delay: 0s; }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes typing {
-        0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-6px); }
-    }
-
-    .message-animate {
-        transition: opacity 0.3s ease-in-out;
-    }
-`;
-document.head.appendChild(style);
