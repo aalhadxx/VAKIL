@@ -169,52 +169,37 @@
         }
 
         async function sendMessage() {
-            const message = userInput.value.trim();
+            const input = document.getElementById('user-input');
+            const messages = document.getElementById('messages');
+            const message = input.value.trim();
+            
             if (!message) return;
 
-            // Disable input and button while processing
-            userInput.disabled = true;
-            sendButton.disabled = true;
-            updateStatus(true, 'Active', 'yellow'); // Set status to "Active" with yellow color
-
-            // Append user message
-            appendMessage(message, true);
-            userInput.value = '';
-
-            // Append loading indicator for bot's message
-            const loadingMessage = appendMessage('', false, true);
+            // Add user message
+            messages.innerHTML += `<div class="mb-2 text-right"><span class="bg-blue-100 rounded px-2 py-1 inline-block">${message}</span></div>`;
+            input.value = '';
 
             try {
-                const response = await fetch('/chat', {
+                const response = await fetch('http://localhost:9001/chat', {  // Updated URL
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ user_input: message }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_input: message })
                 });
-
+                
                 const data = await response.json();
-                // Remove loading message
-                loadingMessage.remove();
-                // Append bot response
-                appendMessage(data.response, false);
+                
+                // Add bot response
+                messages.innerHTML += `<div class="mb-2"><span class="bg-gray-100 rounded px-2 py-1 inline-block">${data.response}</span></div>`;
+                messages.scrollTop = messages.scrollHeight;
             } catch (error) {
-                loadingMessage.remove();
-                appendMessage('Sorry, I encountered an error. Please try again.', false);
-            } finally {
-                // Re-enable input and button
-                userInput.disabled = false;
-                sendButton.disabled = false;
-                updateStatus(true, 'Online', 'green'); // Revert status to "Online"
-                userInput.focus();
+                console.error('Error:', error);
+                messages.innerHTML += `<div class="mb-2"><span class="bg-red-100 rounded px-2 py-1 inline-block">Error: Could not connect to the server</span></div>`;
             }
         }
 
-        sendButton.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
+        // Enter key support
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
         });
 
         // Focus input on page load

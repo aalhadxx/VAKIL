@@ -2,10 +2,21 @@
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 from .ai_features import process_legal_query
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 logger = logging.getLogger("ChatbotApp")
 
 @app.get("/", response_class=HTMLResponse)
